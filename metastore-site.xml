@@ -7,11 +7,11 @@
     </property>
     <property>
         <name>fs.s3a.access.key</name>
-        <value>trinohiveaccesskey</value>
+        <value>miniochangan</value>
     </property>
     <property>
         <name>fs.s3a.secret.key</name>
-        <value>trinohivesupersecretkey</value>
+        <value>miniochangan</value>
     </property>
     <property>
         <name>fs.s3a.connection.ssl.enabled</name>
@@ -23,7 +23,7 @@
     </property> -->
     <property>
         <name>fs.s3a.endpoint</name>
-        <value>http://minio:9000</value>
+        <value>http://minio-recommend.recommend:9000</value>
     </property>
     <!-- <property>
         <name>fs.s3a.impl</name>
@@ -31,7 +31,7 @@
     </property> -->
     <property>
         <name>javax.jdo.option.ConnectionURL</name>
-        <value>jdbc:postgresql://postgres:5432/metadata</value>
+        <value>jdbc:postgresql://postgre-yuj0iw-postgresql.recommend:5432/metadata</value>
     </property>
     <property>
         <name>javax.jdo.option.ConnectionDriverName</name>
