@@ -1,30 +1,30 @@
-# FROM trinodb/trino
-# COPY trino_conf /opt/trino/etc
+FROM openjdk:8-jre
 
-FROM azul/zulu-openjdk:11
+WORKDIR /opt
 
-SHELL ["/bin/bash","-c"]
+ENV HADOOP_VERSION=3.2.1
+ENV METASTORE_VERSION=3.1.2
 
-RUN set -euxo pipefail && \
-    apt-get update && apt-get install -y python3 python3-dev python3-pip curl less && \
-    ln -s /usr/bin/python3 /usr/bin/python &&\
-    echo "trino soft nofile 131072 \ntrino hard nofile 131072\n" >> /etc/security/limits.conf &&\
-    pip3 install sqlalchemy-trino && \
-    curl https://repo1.maven.org/maven2/io/trino/trino-server/382/trino-server-382.tar.gz -o /opt/trino-server.tar.gz && \
-    tar -xf /opt/trino-server.tar.gz -C /opt && rm -f /opt/trino-server.tar.gz && mv /opt/trino-server* /opt/trino && \
-    curl https://repo1.maven.org/maven2/io/trino/trino-cli/382/trino-cli-382-executable.jar -o /usr/bin/trino && \
-    useradd -m trino && \
-    chmod a+x /opt/trino/bin/launcher /usr/bin/trino && \
-    mkdir -p /var/trino/data/ && chown -R trino /var/trino /usr/bin/trino && chmod -R o+rwx /var/trino && \
-    mkdir /etc/hive_metastore && chown -R trino /etc/hive_metastore && \
-    curl https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-common/3.2.0/hadoop-common-3.2.0.jar -o /opt/trino/plugin/hive/hadoop-common-3.2.0.jar && \
-    curl https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.2.0/hadoop-aws-3.2.0.jar -o /opt/trino/plugin/hive/hadoop-aws-3.2.0.jar 
-    # curl https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/1.12.230/aws-java-sdk-bundle-1.12.230.jar -o /opt/trino/plugin/hive/aws-java-sdk-bundle-1.12.230.jar
-COPY conf /opt/trino/etc
+ENV HADOOP_HOME=/opt/hadoop-${HADOOP_VERSION}
+ENV HIVE_HOME=/opt/apache-hive-metastore-${METASTORE_VERSION}-bin
 
-USER trino
+RUN curl -L https://repo1.maven.org/maven2/org/apache/hive/hive-standalone-metastore/${METASTORE_VERSION}/hive-standalone-metastore-${METASTORE_VERSION}-bin.tar.gz | tar zxf - && \
+    curl -L https://archive.apache.org/dist/hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz | tar zxf - && \
+    curl -L https://jdbc.postgresql.org/download/postgresql-42.2.16.jar -o ${HIVE_HOME}/lib/postgresql-42.2.16.jar && \
+    rm -f ${HIVE_HOME}/lib/guava-19.0.jar && \
+    cp ${HADOOP_HOME}/share/hadoop/common/lib/guava-27.0-jre.jar ${HIVE_HOME}/lib && \
+    mkdir /opt/warehouse
 
-WORKDIR /opt/trino/
+COPY metastore-site.xml ${HIVE_HOME}/conf
+COPY entrypoint.sh /entrypoint.sh
 
-CMD [ "bin/launcher", "run" ]
+RUN groupadd -r hive --gid=1000 && \
+    useradd -r -g hive --uid=1000 -d ${HIVE_HOME} hive && \
+    chown hive:hive -R ${HIVE_HOME} && \
+    chown hive:hive /entrypoint.sh && chmod +x /entrypoint.sh && \
+    chown -R hive /opt/warehouse/
 
+USER hive
+EXPOSE 9083
+
+ENTRYPOINT ["sh", "-c", "/entrypoint.sh"]
